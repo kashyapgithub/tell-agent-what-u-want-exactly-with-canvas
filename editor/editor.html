@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UI Sketch</title>
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+
+  <!-- ===================== TOOLBAR ===================== -->
+  <header id="toolbar">
+
+    <div class="tool-group">
+      <label class="field">
+        Stroke
+        <input type="color" id="stroke-color" value="#1b1c20" />
+      </label>
+      <label class="field">
+        Fill
+        <input type="color" id="fill-color" value="#3a5bd9" />
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="fill-enabled" />
+        filled
+      </label>
+      <label class="field">
+        Width
+        <input type="range" id="stroke-width" min="1" max="12" value="2" />
+      </label>
+    </div>
+
+    <div class="tool-group" id="effects-group">
+      <label class="field" title="Rounded corners (rectangles only)">
+        Radius
+        <input type="range" id="corner-radius" min="0" max="60" value="0" />
+      </label>
+      <label class="field" title="Applies to the selected shape, or the next one you draw">
+        Opacity
+        <input type="range" id="opacity" min="0" max="100" value="100" />
+      </label>
+      <button id="effects-btn" title="Effects: shadows, blurs, noise, texture, glass, shader">Effects <span id="effects-count" class="badge hidden">0</span></button>
+      <label class="field checkbox">
+        <input type="checkbox" id="gradient-enabled" />
+        gradient
+      </label>
+      <label class="field hidden" id="gradient-to-field">
+        to
+        <input type="color" id="gradient-to-color" value="#1c2b6b" />
+      </label>
+      <label class="field checkbox" title="Dashed stroke">
+        <input type="checkbox" id="dashed-enabled" />
+        dashed
+      </label>
+      <label class="field checkbox" title="Right-angle routing for connectors">
+        <input type="checkbox" id="elbow-enabled" />
+        elbow
+      </label>
+      <label class="field" title="Text size">
+        Size
+        <input type="number" id="font-size" min="8" max="400" value="18" />
+      </label>
+      <label class="field" title="Polygon sides / star points">
+        Points
+        <input type="number" id="shape-count" min="3" max="60" value="5" />
+      </label>
+      <label class="field" title="Star inner radius, % of the outer radius">
+        Inner
+        <input type="number" id="shape-inner" min="5" max="95" value="50" />
+      </label>
+      <label class="field" title="Rotation in degrees (rectangles, ellipses, images, text)">
+        Rotate
+        <input type="number" id="rotation" min="-180" max="180" value="0" />
+      </label>
+    </div>
+
+    <div class="tool-group" id="arrange-group">
+      <button class="icon-btn" data-align="left" title="Align left"><svg viewBox="0 0 16 16"><path d="M2 1v14"/><rect x="4" y="3" width="10" height="3"/><rect x="4" y="9" width="6" height="3"/></svg></button>
+      <button class="icon-btn" data-align="hcenter" title="Align horizontal centres"><svg viewBox="0 0 16 16"><path d="M8 1v14"/><rect x="3" y="3" width="10" height="3"/><rect x="5" y="9" width="6" height="3"/></svg></button>
+      <button class="icon-btn" data-align="right" title="Align right"><svg viewBox="0 0 16 16"><path d="M14 1v14"/><rect x="2" y="3" width="10" height="3"/><rect x="6" y="9" width="6" height="3"/></svg></button>
+      <button class="icon-btn" data-align="top" title="Align top"><svg viewBox="0 0 16 16"><path d="M1 2h14"/><rect x="3" y="4" width="3" height="10"/><rect x="9" y="4" width="3" height="6"/></svg></button>
+      <button class="icon-btn" data-align="vcenter" title="Align vertical centres"><svg viewBox="0 0 16 16"><path d="M1 8h14"/><rect x="3" y="3" width="3" height="10"/><rect x="9" y="5" width="3" height="6"/></svg></button>
+      <button class="icon-btn" data-align="bottom" title="Align bottom"><svg viewBox="0 0 16 16"><path d="M1 14h14"/><rect x="3" y="2" width="3" height="10"/><rect x="9" y="6" width="3" height="6"/></svg></button>
+      <button class="icon-btn" data-distribute="x" title="Distribute horizontally (3+ shapes)"><svg viewBox="0 0 16 16"><path d="M2 1v14M14 1v14"/><rect x="6" y="4" width="4" height="8"/></svg></button>
+      <button class="icon-btn" data-distribute="y" title="Distribute vertically (3+ shapes)"><svg viewBox="0 0 16 16"><path d="M1 2h14M1 14h14"/><rect x="4" y="6" width="8" height="4"/></svg></button>
+      <button id="group-btn" title="Group (Ctrl+G)">Group</button>
+      <button id="ungroup-btn" title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
+    </div>
+
+    <div class="tool-group">
+      <button id="undo-btn" title="Undo (Ctrl+Z)">Undo</button>
+      <button id="redo-btn" title="Redo (Ctrl+Shift+Z)">Redo</button>
+      <button id="clear-btn" title="Clear canvas">Clear</button>
+    </div>
+
+    <div class="tool-group" id="zoom-group">
+      <button id="zoom-out" title="Zoom out (Ctrl −)">−</button>
+      <button id="zoom-label" title="Reset to 100% (Ctrl 0)">100%</button>
+      <button id="zoom-in" title="Zoom in (Ctrl +)">+</button>
+      <button id="zoom-fit" title="Fit all content (Shift 1)">Fit</button>
+      <button id="layers-toggle" title="Show / hide the layers panel">Layers</button>
+    </div>
+
+    <div class="tool-group export-group">
+      <span class="hint">Drop or paste a screenshot to add it as a reference</span>
+      <label class="field">
+        Send via
+        <select id="export-mode">
+          <option value="local">Local file</option>
+          <option value="mcp">MCP server</option>
+        </select>
+      </label>
+      <label class="field" id="folder-field">
+        Folder
+        <input type="text" id="export-folder" value="ui-sketches" spellcheck="false" />
+      </label>
+      <label class="field hidden" id="port-field">
+        Port
+        <input type="number" id="mcp-port" value="5959" min="1" max="65535" />
+      </label>
+      <button id="export-btn" class="primary">Send to project</button>
+      <span id="export-status"></span>
+    </div>
+
+  </header>
+
+  <!-- ===================== CANVAS ===================== -->
+  <div id="workspace">
+    <main id="canvas-wrap">
+      <canvas id="board"></canvas>
+      <!-- Hidden text input used only while placing/editing a text shape -->
+      <input type="text" id="text-input" class="hidden" spellcheck="false" />
+      <input type="file" id="image-picker" accept="image/*" multiple hidden />
+
+      <!-- Comment box (comments.js) -->
+      <div id="comment-popover" class="hidden">
+        <div class="cm-head"><span id="cm-title">Comment</span><button id="cm-close" class="fx-icon" title="Close">×</button></div>
+        <textarea id="cm-text" rows="3" placeholder="Add a note for your agent…"></textarea>
+        <div class="cm-actions">
+          <button id="cm-resolve" class="cm-btn">Resolve</button>
+          <button id="cm-delete" class="cm-btn">Delete</button>
+          <span class="cm-spacer"></span>
+          <button id="cm-post" class="cm-btn primary">Post</button>
+        </div>
+      </div>
+
+      <!-- Figma-style floating tool dock (built by dock.js) -->
+      <nav id="dock" aria-label="Tools"></nav>
+
+      <!-- Effects popover (opened from the toolbar's Effects button) -->
+      <section id="effects-panel" class="hidden" aria-label="Effects">
+        <header class="fx-head">
+          <span id="fx-title">Effects</span>
+          <button id="fx-add" class="fx-icon" title="Add effect">+</button>
+          <button id="fx-close" class="fx-icon" title="Close">×</button>
+        </header>
+        <div id="fx-menu" class="hidden"></div>
+        <div id="fx-scope" class="fx-scope"></div>
+        <div id="fx-list"></div>
+      </section>
+    </main>
+
+    <aside id="layers">
+      <div class="layers-head">Layers</div>
+      <div id="layers-list"></div>
+    </aside>
+
+    <aside id="inspect-panel" class="hidden">
+      <div class="layers-head">Inspect <span class="insp-badge">Dev mode · read-only</span></div>
+      <div id="inspect-body"></div>
+    </aside>
+  </div>
+
+  <!-- Actions palette (Ctrl/Cmd+K) — built by actions.js -->
+  <div id="actions-modal" class="hidden">
+    <div class="actions-box" role="dialog" aria-label="Actions">
+      <input id="actions-input" type="text" placeholder="Search actions…" autocomplete="off" spellcheck="false" />
+      <div id="actions-list" role="listbox"></div>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "UI Sketch — Local Canvas",
+  "version": "1.0.0",
+  "description": "Draw quick UI sketches on a canvas and export them straight to a local file, so an AI coding agent working on your project can read exactly what you want.",
+
+  "permissions": [
+    "downloads",
+    "storage"
+  ],
+
+  "host_permissions": [
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_title": "Open UI Sketch canvas"
+  }
+}

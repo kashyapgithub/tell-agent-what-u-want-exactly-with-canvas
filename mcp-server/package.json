@@ -1,0 +1,14 @@
+{
+  "name": "ui-sketch-mcp-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Local receiver + MCP server pairing for the UI Sketch Chrome extension.",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node setup.js",
+    "uninstall-setup": "node uninstall.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}
