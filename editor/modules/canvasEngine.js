@@ -18,7 +18,7 @@ import {
 } from "./shapes.js";
 import { byIdMap, clippingAncestors } from "./hierarchy.js";
 import { drawFrameLabels, drawCommentPins, commentNumbers, drawDraftPath, drawPathEdit } from "./overlays.js";
-import { setEffectsCanvasFactory } from "./effects.js";
+import { setEffectsCanvasFactory, setFastZoom } from "./effects.js";
 import { effectsExtent } from "./effectsModel.js";
 import { drawConnector, drawConnectorHighlight, drawDraftConnector } from "./connectors.js";
 
@@ -131,7 +131,16 @@ export function createCanvasEngine(canvasEl, { createCanvas = defaultCreateCanva
   }
 
   /** Zooms by `factor`, keeping the world point under (sx, sy) [canvas-relative CSS px] fixed. */
+  let zoomTimer = null;
+  /** Marks the view as "zooming" so effects render at coarse steps; repaints sharp 160 ms after the last tick. */
+  function markZooming() {
+    setFastZoom(true);
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(() => { setFastZoom(false); if (lastState) scheduleRender(lastState); }, 160);
+  }
+
   function zoomAt(sx, sy, factor) {
+    markZooming();
     const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, view.scale * factor));
     const k = next / view.scale;
     view.x = sx - (sx - view.x) * k;

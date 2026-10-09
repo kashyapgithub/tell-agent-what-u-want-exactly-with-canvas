@@ -27,8 +27,13 @@ import { noiseCells, textureOverlay, shaderPixels, hashString } from "./procedur
 const MAX_LAYER_PIXELS = 12_000_000;   // beyond this the layer is rendered at lower resolution
 const MAX_PROCEDURAL_SIDE = 512;       // texture/shader are generated at most this big, then upscaled
 const MAX_NOISE_CELLS = 1024;
-const MAX_CACHE_PIXELS = 48_000_000;
-const MAX_CACHE_ENTRIES = 80;
+const MAX_CACHE_PIXELS = 96_000_000;
+const MAX_CACHE_ENTRIES = 600;
+
+// While the user zooms, layers render at coarse scale steps so the cache keeps hitting.
+let fastZoom = false;
+export function setFastZoom(on) { fastZoom = !!on; }
+const quantizeScale = (k) => Math.pow(2, Math.round(Math.log2(k) * 4) / 4);
 
 let makeCanvas = (w, h) => {
   const c = document.createElement("canvas");
@@ -78,6 +83,7 @@ function procGet(key, build) {
   return c;
 }
 
+const SEEDED = new Set(["noise", "texture", "shader"]);
 const imageKeys = new Map();
 const imageKey = (src) => { if (!imageKeys.has(src)) imageKeys.set(src, imageKeys.size); return imageKeys.get(src); };
 
@@ -88,9 +94,14 @@ const imageKey = (src) => { if (!imageKeys.has(src)) imageKeys.set(src, imageKey
  */
 function fingerprint(shape, b, k, pad) {
   const POSITION = new Set(["x", "y", "x1", "y1", "x2", "y2", "points", "nodes"]);
-  const IGNORED = new Set(["id", "name", "hidden", "locked", "groupId", "opacity"]);
+  const IGNORED = new Set(["id", "name", "hidden", "locked", "groupId", "opacity", "effects"]);
   const rel = {};
   for (const key of Object.keys(shape)) if (!POSITION.has(key) && !IGNORED.has(key)) rel[key] = shape[key];
+  // Effect ids never change the pixels, except for seeded generators (their seed may derive from it).
+  rel.fx = visibleEffects(shape.effects).map((e) => {
+    if (SEEDED.has(e.type)) return e;
+    const { id, ...rest } = e; return rest;
+  });
 
   // Only the position fields a shape type actually uses count, and only relative to its bounds.
   if (shape.type === "line" || shape.type === "arrow") {
@@ -204,6 +215,7 @@ function getBackdrop(L) {
 
 function dropShadow(L, fx) {
   const { W, H, k } = L;
+  if (Math.abs(num(fx.spread)) < 0.01) return dropShadowNative(L, fx);
   const source = spreadShape(L.body, num(fx.spread) * k, W, H);
   const shadow = blur(tint(source, fx.color, W, H), (num(fx.blur) / 2) * k, W, H);
   const t = layer(W, H);
@@ -216,6 +228,29 @@ function dropShadow(L, fx) {
     t.ctx.drawImage(L.mask, 0, 0);
   }
   L.out.drawImage(t.canvas, 0, 0);
+}
+
+/**
+ * Spread-free drop shadow via the browser's native (GPU-friendly) canvas shadow:
+ * the body is drawn far off-canvas so only its shadow lands in view.
+ */
+function dropShadowNative(L, fx) {
+  const { W, H, k } = L;
+  const FAR = W + 4096;
+  const t = layer(W, H);
+  t.ctx.shadowColor = fx.color;
+  t.ctx.shadowBlur = num(fx.blur) * k;
+  t.ctx.shadowOffsetX = FAR + num(fx.x) * k;
+  t.ctx.shadowOffsetY = num(fx.y) * k;
+  t.ctx.drawImage(L.body, -FAR, 0);
+  t.ctx.shadowColor = "transparent";
+  if (!fx.showBehind) {
+    t.ctx.globalCompositeOperation = "destination-out";
+    t.ctx.drawImage(L.mask, 0, 0);
+  }
+  L.out.globalAlpha = num(fx.opacity, 25) / 100;
+  L.out.drawImage(t.canvas, 0, 0);
+  L.out.globalAlpha = 1;
 }
 
 /** Shadow cast inside `clip` (the shape): the inverse of the shape, offset, blurred, clipped back to the shape. */
@@ -383,6 +418,7 @@ export function drawWithEffects(ctx, shape, { bounds, drawBody, drawMask, cachea
   let k = Math.hypot(t.a, t.b) || 1;
   const pad = effectsExtent(fx, shape.strokeWidth);
   const wWorld = bounds.w + 2 * pad, hWorld = bounds.h + 2 * pad;
+  if (fastZoom) k = quantizeScale(k);
   if (wWorld * hWorld * k * k > MAX_LAYER_PIXELS) k = Math.sqrt(MAX_LAYER_PIXELS / (wWorld * hWorld));
   const W = Math.max(1, Math.ceil(wWorld * k)), H = Math.max(1, Math.ceil(hWorld * k));
   const ox = bounds.x - pad, oy = bounds.y - pad;

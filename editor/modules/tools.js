@@ -814,9 +814,10 @@ export function createToolController({ canvasEl, textInputEl, viewport, onChange
     textInputEl.addEventListener("blur", finish);
     textInputEl.addEventListener("keydown", onKey);
 
-    // Focus after the current pointer event finishes; focusing inside pointerdown
-    // can lose the race against the browser's own focus handling.
-    setTimeout(() => textInputEl.focus(), 0);
+    // Focus synchronously so the very first keystrokes land in the input, and again
+    // after the event loop turns in case the browser's own focus handling stole it.
+    textInputEl.focus();
+    setTimeout(() => { if (editingText) textInputEl.focus(); }, 0);
   }
 
   /** Double-click: enter a group, edit a text in place, or label a connector. */
@@ -912,6 +913,8 @@ export function createToolController({ canvasEl, textInputEl, viewport, onChange
     onChange(state);
   }
 
+  // With the text tool, stop the browser moving focus to the canvas on mousedown (it would blur the input).
+  canvasEl.addEventListener("mousedown", (e) => { if (state.currentTool === "text") e.preventDefault(); });
   canvasEl.addEventListener("pointerdown", onPointerDown);
   canvasEl.addEventListener("pointermove", onPointerMove);
   canvasEl.addEventListener("dblclick", onDoubleClick);
