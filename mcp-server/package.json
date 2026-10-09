@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "setup": "node setup.js",
-    "uninstall-setup": "node uninstall.js"
+    "uninstall-setup": "node uninstall.js",
+    "connect": "node connect.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4"

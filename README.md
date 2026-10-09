@@ -4,6 +4,13 @@ A tiny Chrome extension: draw a rough UI sketch, hit one button, and it lands
 as a file inside your project folder — no Figma, no manual export/import,
 no GitHub round-trip.
 
+## Quickest setup (two clicks, no copy-paste)
+
+1. **Double-click the installer** — `Install-Windows.bat` (Windows) or `Install-Mac-Linux.command` (macOS/Linux). It installs the server's dependency, makes the server start at every login, and **registers it with every coding agent it finds** (Claude Code, Cursor, opencode, Antigravity). Needs [Node.js](https://nodejs.org) installed once.
+2. **Load the extension:** `chrome://extensions` → Developer mode → *Load unpacked* → pick this folder.
+
+Then restart your agent and tell it "get the latest sketch". The installer is safe to re-run, never overwrites your other MCP servers, and backs up any config it edits (`*.ui-sketch.bak`). If a config can't be parsed (e.g. it has comments) it is left untouched and reported. Re-run just the agent step any time with `npm run connect` in `mcp-server/`.
+
 ## Install (unpacked, ~30 seconds)
 
 1. Go to `chrome://extensions`.
