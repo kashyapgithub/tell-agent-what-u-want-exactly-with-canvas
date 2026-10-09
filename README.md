@@ -84,7 +84,20 @@ project folder — the extension talks to it over `localhost:5959` by default
 
 - **Cursor:** put this in `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global).
 - **Claude Code:** `claude mcp add ui-sketch -- node /absolute/path/to/mcp-server/server.js`
-- **Antigravity:** same `mcpServers` JSON shape, in its MCP settings.
+- **opencode:** add to `opencode.json` (project) or your global opencode config. opencode uses its own shape — a `command` *array*:
+  ```json
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+      "ui-sketch": {
+        "type": "local",
+        "command": ["node", "/absolute/path/to/mcp-server/server.js"],
+        "enabled": true
+      }
+    }
+  }
+  ```
+- **Antigravity (2.0, IDE and `agy` CLI):** all share `~/.gemini/config/mcp_config.json`. In the IDE open it via the agent panel's `...` menu → *Manage MCP Servers* → *View raw config*. It uses the `mcpServers` shape above. Google's docs only show remote (`serverUrl`) entries, so the local `command`/`args` form is the usual convention but unverified — if it doesn't load, use the local file drop instead and point Antigravity at `latest.png`.
 
 (Check each tool's current docs if the config location has moved — the
 JSON shape above is the common denominator across all of them.)
