@@ -131,7 +131,7 @@ export function createActionsPalette({ modalEl, inputEl, listEl, commands }) {
   modalEl.addEventListener("mousedown", (e) => { if (e.target === modalEl) close(); });
 
   window.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "k" || e.key === "/")) { e.preventDefault(); isOpen() ? close() : open(); }
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key.toLowerCase() === "k" || e.key === "/")) { e.preventDefault(); isOpen() ? close() : open(); }
   });
 
   return { open, close, isOpen };

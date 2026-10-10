@@ -17,6 +17,8 @@ import { createDock } from "./modules/dock.js";
 import { createComments } from "./modules/comments.js";
 import { createInspectPanel } from "./modules/inspect.js";
 import { buildCommands, createActionsPalette } from "./modules/actions.js";
+import { topHit } from "./modules/selection.js";
+import { wireScreenshotMenu } from "./modules/screenshotMenu.js";
 
 /**
  * Design <-> Dev mode. Dev mode is read-only (the controller refuses every edit),
@@ -65,6 +67,16 @@ toolbar = wireToolbar({ controller, engine });
 inspect = createInspectPanel({ panelEl: document.getElementById("inspect-panel"), controller });
 comments = createComments({ wrapEl: canvasWrapEl, popEl: document.getElementById("comment-popover"), controller, engine });
 layers = createLayersPanel({ listEl: document.getElementById("layers-list"), controller });
+
+// Right-click a shape on the canvas: same menu as the layers list (arrange, group, rename, lock, hide, delete).
+canvasEl.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  const pt = engine.toWorld(e.clientX, e.clientY);
+  const hit = topHit(controller.state.shapes, pt.x, pt.y, 6 / engine.getScale(), engine.getScale());
+  if (!hit) return;
+  if (!controller.state.selectedIds.includes(hit.id)) controller.select([hit.id], { expand: true });
+  layers.openMenuAt(e.clientX, e.clientY, hit);
+});
 effectsPanel = createEffectsPanel({
   panelEl: document.getElementById("effects-panel"),
   buttonEl: document.getElementById("effects-btn"),
@@ -74,6 +86,13 @@ effectsPanel = createEffectsPanel({
 wireViewportControls({ canvasEl, engine, getShapes: () => controller.state.shapes, getTool: () => controller.state.currentTool });
 imageImport = wireImageImport({
   canvasWrapEl, canvasEl, controller, viewport: engine, pickerEl: document.getElementById("image-picker"),
+});
+
+wireScreenshotMenu({
+  buttonEl: document.getElementById("screenshot-btn"),
+  menuEl: document.getElementById("screenshot-menu"),
+  statusEl: document.getElementById("screenshot-status"),
+  imageImport,
 });
 
 dock = createDock({

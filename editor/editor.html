@@ -10,6 +10,16 @@
   <!-- ===================== TOOLBAR ===================== -->
   <header id="toolbar">
 
+    <div class="tool-group" id="screenshot-group">
+      <button id="screenshot-btn" class="primary" title="Add a screenshot (Ctrl/Cmd+Shift+K) — or just press Ctrl/Cmd+V with an image copied">📷 Add screenshot ▾</button>
+      <div id="screenshot-menu" class="shot-menu hidden" role="menu">
+        <button data-shot="paste" role="menuitem"><span>Paste from clipboard</span><kbd>Ctrl/⌘ V</kbd></button>
+        <button data-shot="upload" role="menuitem"><span>Upload image…</span></button>
+        <button data-shot="capture" role="menuitem"><span>Capture screen / window…</span></button>
+      </div>
+      <span id="screenshot-status" class="hint"></span>
+    </div>
+
     <div class="tool-group">
       <label class="field">
         Stroke
@@ -84,6 +94,7 @@
       <button class="icon-btn" data-distribute="y" title="Distribute vertically (3+ shapes)"><svg viewBox="0 0 16 16"><path d="M1 2h14M1 14h14"/><rect x="4" y="6" width="8" height="4"/></svg></button>
       <button id="group-btn" title="Group (Ctrl+G)">Group</button>
       <button id="ungroup-btn" title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
+      <button id="delete-btn" class="danger" title="Delete the selected shape(s) (Delete / Backspace)" disabled>Delete</button>
     </div>
 
     <div class="tool-group">

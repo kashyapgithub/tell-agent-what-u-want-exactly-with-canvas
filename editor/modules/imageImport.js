@@ -1,9 +1,12 @@
 /**
  * imageImport.js
  * --------------------------------------------------------------------------
- * Two ways to put a screenshot on the canvas as a reference image:
+ * Four ways to put a screenshot on the canvas as a reference image:
  *   - drag a file onto the canvas
- *   - paste from the clipboard (most OS screenshot tools copy there by default)
+ *   - Ctrl/Cmd+V with an image on the clipboard (most OS screenshot tools copy
+ *     there by default) — works wherever focus is, even in a text box
+ *   - "Add screenshot" button → Paste from clipboard (reads the clipboard itself)
+ *   - "Add screenshot" button → Upload, or Capture a screen/window/tab
  *
  * Large screenshots are downscaled on import (see MAX_STORED_DIMENSION): a
  * 2880px retina capture is several megabytes of base64 that would ride along
@@ -32,16 +35,63 @@ export function wireImageImport({ canvasWrapEl, canvasEl, controller, viewport, 
   });
 
   document.addEventListener("paste", (e) => {
-    if (isTextEntry(document.activeElement)) return; // plain text entry — not ours to intercept
-    const files = [...(e.clipboardData?.items || [])]
-      .filter(item => item.type.startsWith("image/"))
-      .map(item => item.getAsFile())
-      .filter(Boolean);
-    if (!files.length) { controller.pasteShapes(); return; } // no image on the clipboard: paste copied shapes
+    const files = imageFilesFrom(e.clipboardData);
+    if (files.length) {
+      // An image on the clipboard always wins — even when a text box has focus (e.g. the Folder
+      // field), because a screenshot pasted there would otherwise be silently dropped.
+      e.preventDefault();
+      importFiles(files, viewCentreOrPointer());
+      return;
+    }
+    if (isTextEntry(document.activeElement)) return; // plain text paste — not ours to intercept
+    controller.pasteShapes();                         // no image: paste copied shapes
+  });
+
+  /** Where a new image lands: under the pointer if it has been over the canvas, else the view centre. */
+  function viewCentreOrPointer() {
     const r = canvasEl.getBoundingClientRect();
     const at = lastClient || { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    importFiles(files, viewport.toWorld(at.x, at.y));
-  });
+    return viewport.toWorld(at.x, at.y);
+  }
+  const viewCentre = () => {
+    const r = canvasEl.getBoundingClientRect();
+    return viewport.toWorld(r.left + r.width / 2 - 120, r.top + r.height / 2 - 90);
+  };
+
+  /**
+   * Button route: reads the clipboard directly (needs the "clipboardRead" permission).
+   * Returns "added" | "none" (clipboard has no image) | "denied".
+   */
+  async function pasteFromClipboard() {
+    try {
+      const items = await navigator.clipboard.read();
+      const files = [];
+      for (const item of items) {
+        const type = item.types.find(t => t.startsWith("image/"));
+        if (type) files.push(new File([await item.getType(type)], "pasted-image", { type }));
+      }
+      if (!files.length) return "none";
+      await importFiles(files, viewCentre());
+      return "added";
+    } catch {
+      return "denied";
+    }
+  }
+
+  /** Button route: pick a screen / window / tab and grab one frame of it. Returns "added" | "cancelled" | "unsupported". */
+  async function captureScreen() {
+    if (!navigator.mediaDevices?.getDisplayMedia) return "unsupported";
+    let stream;
+    try { stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false }); }
+    catch { return "cancelled"; } // user closed the picker
+    try {
+      const file = await grabFrame(stream);
+      await importFiles([file], viewCentre());
+      return "added";
+    } finally {
+      stream.getTracks().forEach(t => t.stop());
+    }
+  }
 
   /** "Image…" in the Shape menu: open the file picker and place the chosen images at the centre of the view. */
   function pick() {
@@ -50,10 +100,7 @@ export function wireImageImport({ canvasWrapEl, canvasEl, controller, viewport, 
     pickerEl.click();
   }
   if (pickerEl) {
-    pickerEl.addEventListener("change", () => {
-      const r = canvasEl.getBoundingClientRect();
-      importFiles(pickerEl.files, viewport.toWorld(r.left + r.width / 2 - 120, r.top + r.height / 2 - 90));
-    });
+    pickerEl.addEventListener("change", () => importFiles(pickerEl.files, viewCentre()));
   }
 
   async function importFiles(fileList, origin) {
@@ -73,7 +120,32 @@ export function wireImageImport({ canvasWrapEl, canvasEl, controller, viewport, 
     }
   }
 
-  return { pick };
+  return { pick, pasteFromClipboard, captureScreen, importFiles };
+}
+
+/** Image files on a clipboard/drag payload, found through `items` or `files` (browsers differ in which they fill). */
+export function imageFilesFrom(data) {
+  const out = [];
+  for (const item of data?.items || []) {
+    if (item.kind === "file" && item.type.startsWith("image/")) { const f = item.getAsFile(); if (f) out.push(f); }
+  }
+  if (!out.length) for (const f of data?.files || []) if (f.type.startsWith("image/")) out.push(f);
+  return out;
+}
+
+/** Draws one frame of a screen-capture stream onto a canvas and returns it as a PNG File. */
+export async function grabFrame(stream) {
+  const video = document.createElement("video");
+  video.muted = true;
+  video.srcObject = stream;
+  await video.play();
+  // The first frame can be blank while the capture picker is still fading out.
+  await new Promise(r => setTimeout(r, 250));
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+  return new File([blob], "screen-capture.png", { type: "image/png" });
 }
 
 /** Text fields keep their own paste; sliders/checkboxes (also <input>s) must not block it. */

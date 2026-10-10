@@ -7,3 +7,5 @@ export const EYE_OFF = '<svg viewBox="0 0 16 16"><path d="M1 8s2.5-4.5 7-4.5S15 
 export const LOCK = '<svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>';
 export const UNLOCK = '<svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1"/><path d="M5.5 7V5a2.5 2.5 0 014.6-1.3"/></svg>';
 export const MINUS = '<svg viewBox="0 0 16 16"><path d="M3 8h10"/></svg>';
+
+export const TRASH = '<svg viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5M7 7v4M9 7v4"/></svg>';

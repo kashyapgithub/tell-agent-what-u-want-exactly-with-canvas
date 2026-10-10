@@ -21,7 +21,7 @@ import {
   createShape, nextId, nextName, getBounds, getWorldBounds, hitTest, hitTestHandle, hitTestBoxHandles,
   normalizeShape, simplifyPoints, isRotatable,
 } from "./shapes.js";
-import { descendantsOf, topLevelOf, reparent, enforceHierarchy } from "./hierarchy.js";
+import { descendantsOf, topLevelOf, reparent, enforceHierarchy, CONTAINER_TYPES } from "./hierarchy.js";
 import { moveShape, translateShape, resizeShape, rotateShape, resizeGroup } from "./transform.js";
 import { scaleEffects } from "./effectsModel.js";
 import { hitTestNodes, mirrorHandle, withNode } from "./path.js";
@@ -328,19 +328,48 @@ export function createToolController({ canvasEl, textInputEl, viewport, onChange
     commitHistory();
   }
 
-  /** Moves `dragId` (and the rest of the selection, if it's part of it) directly above `targetId` in z-order. */
-  function moveLayer(dragId, targetId) {
+  /**
+   * Layers-panel drag & drop. Moves `dragId` (and the rest of the selection, if it is part of it)
+   * relative to `targetId`:
+   *   "above"  directly in front of the target, inside the target's container
+   *   "below"  directly behind the target, inside the target's container
+   *   "inside" into the target (a frame/section), as its frontmost child
+   * Shapes keep their canvas position; only stacking and parenting change.
+   * Dropping a layer into itself or one of its own descendants is refused.
+   */
+  function moveLayer(dragId, targetId, where = "above") {
     const moving = new Set(state.selectedIds.includes(dragId) ? state.selectedIds : [dragId]);
     if (moving.has(targetId)) return;
     const target = state.shapes.find(s => s.id === targetId);
-    // A layer can't be dropped into something it contains.
-    if (target && descendantsOf(state.shapes, [...moving]).some(d => d.id === targetId)) return;
+    if (!target) return;
+    if (descendantsOf(state.shapes, [...moving]).some(d => d.id === targetId)) return;
+    if (where === "inside" && !CONTAINER_TYPES.has(target.type)) where = "above";
+
     const picked = state.shapes.filter(s => moving.has(s.id));
     const rest = state.shapes.filter(s => !moving.has(s.id));
     const at = rest.findIndex(s => s.id === targetId);
     if (at < 0) return;
-    rest.splice(at + 1, 0, ...picked);
-    for (const p of picked) if (p.type !== "slice") p.parentId = target.parentId ?? null; // dropped beside the target: same container
+
+    let insertAt, parentId;
+    if (where === "inside") {
+      // After the target's last (frontmost) descendant that is still in the list.
+      const family = new Set([targetId, ...descendantsOf(rest, [targetId]).map(d => d.id)]);
+      insertAt = at;
+      rest.forEach((s, i) => { if (family.has(s.id)) insertAt = i; });
+      insertAt += 1;
+      parentId = targetId;
+    } else {
+      // "above" = after the target and everything inside it, so it sits in front of the whole subtree.
+      if (where === "above") {
+        const family = new Set([targetId, ...descendantsOf(rest, [targetId]).map(d => d.id)]);
+        insertAt = at;
+        rest.forEach((s, i) => { if (family.has(s.id)) insertAt = i; });
+        insertAt += 1;
+      } else insertAt = at;
+      parentId = target.parentId ?? null;
+    }
+    rest.splice(insertAt, 0, ...picked);
+    for (const p of picked) if (p.type !== "slice") p.parentId = parentId;
     state.shapes = enforceHierarchy(rest);
     commitHistory();
   }

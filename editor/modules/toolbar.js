@@ -89,7 +89,7 @@ function wireStyleControls(controller) {
   const arrangeButtons = {
     align: document.querySelectorAll("[data-align]"),
     distribute: document.querySelectorAll("[data-distribute]"),
-    group: $("group-btn"), ungroup: $("ungroup-btn"),
+    group: $("group-btn"), ungroup: $("ungroup-btn"), del: $("delete-btn"),
   };
 
   /** Reflects the selection into the controls (only when the selection changes). */
@@ -103,6 +103,7 @@ function wireStyleControls(controller) {
     arrangeButtons.distribute.forEach(b => { b.disabled = nodes.length < 3; });
     arrangeButtons.group.disabled = selection.filter(s => s.type !== "connector").length < 2;
     arrangeButtons.ungroup.disabled = !selection.some(s => s.groupId);
+    arrangeButtons.del.disabled = selection.length === 0;
 
     const shape = selection[0];
     if (!shape) return;
@@ -131,6 +132,7 @@ function wireArrangeControls(controller) {
     btn.addEventListener("click", () => controller.distributeSelected(btn.dataset.distribute)));
   $("group-btn").addEventListener("click", () => controller.groupSelected());
   $("ungroup-btn").addEventListener("click", () => controller.ungroupSelected());
+  $("delete-btn").addEventListener("click", () => controller.deleteSelected());
   $("layers-toggle").addEventListener("click", () => $("layers").classList.toggle("hidden"));
 }
 

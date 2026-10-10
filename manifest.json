@@ -6,7 +6,8 @@
 
   "permissions": [
     "downloads",
-    "storage"
+    "storage",
+    "clipboardRead"
   ],
 
   "host_permissions": [

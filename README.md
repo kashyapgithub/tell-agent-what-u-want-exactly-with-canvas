@@ -132,6 +132,12 @@ JSON shape above is the common denominator across all of them.)
 Once registered, the agent has a `get_latest_sketch` tool that returns the
 sketch JSON plus a PNG preview — no file path involved on its end at all.
 
+### Layers (Figma-style), delete, and screenshots
+
+- **Layers panel:** drag a row — upper part drops *above*, lower part *below*, the middle of a frame/section drops *inside* it (a line / outline shows where). Arrows collapse frames; Ctrl/Cmd+click toggles, Shift+click selects a range; F2 renames; selecting on the canvas reveals and scrolls to the row. Right-click a row *or a shape on the canvas* for Bring to front / forward / Send backward / back, Group, Frame, Rename, Lock, Hide, Delete. Shortcuts: `⌘]`, `⌘[`, `⇧⌘]`, `⇧⌘[`.
+- **Delete:** the **Delete** button in the toolbar, the trash icon on a layer row, right-click → Delete, or the Delete/Backspace key. Undo (Ctrl/Cmd+Z) brings it back.
+- **Add screenshot** (first button in the toolbar): *Paste from clipboard*, *Upload image…*, or *Capture screen / window…* (browser picker). Shortcut **Ctrl/Cmd+Shift+K** pastes the clipboard image (or opens the file picker if there isn't one). Plain **Ctrl/Cmd+V** also accepts an image wherever focus is, including inside a text box.
+
 ## Using the canvas
 
 **The tool dock** (floating at the bottom, like Figma's). Each group's button shows the tool you used last from it; the ▾ opens the rest.
