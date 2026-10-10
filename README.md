@@ -11,6 +11,16 @@ no GitHub round-trip.
 
 Then restart your agent and tell it "get the latest sketch". The installer is safe to re-run, never overwrites your other MCP servers, and backs up any config it edits (`*.ui-sketch.bak`). If a config can't be parsed (e.g. it has comments) it is left untouched and reported. Re-run just the agent step any time with `npm run connect` in `mcp-server/`.
 
+### Agent in a VM (or on another computer)
+
+Chrome on your Mac, agent inside a VMware Fusion Ubuntu VM? No terminal juggling:
+
+1. **In the VM**, run the installer and answer **Yes** to "Different computer?". It prints an **address** and an **access code**.
+2. **In Chrome**, set *Send via → MCP server*, click **Agent connection**, choose **In a VM or another computer**, type the address + code, press **Test connection**, then **Save**. Chrome asks once to allow that address.
+3. The dot next to *Agent connection* shows green when the agent side is reachable. Send as usual.
+
+Notes: this uses the MCP route (file drop saves into *Chrome's* machine, so it can't cross to a VM). Other computers can only send with the access code; with "Different computer?" = No the server listens on this computer only. Change it later with `node lan.js on|off|status` in `mcp-server/`. Use the VM's *bridged/NAT* address that the Mac can reach (in Ubuntu: `ip a`).
+
 ## Install (unpacked, ~30 seconds)
 
 1. Go to `chrome://extensions`.

@@ -28,8 +28,22 @@ import http from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { readSketch, writeSketch } from "./lib/storage.js";
+import { readConfig, codeMatches } from "./lib/config.js";
 
 const PORT = Number(process.env.PORT) || 5959;
+const MAX_BODY_BYTES = 60 * 1024 * 1024; // a big PNG preview, but not unbounded
+
+// Settings are read once at startup; `node lan.js on|off` restarts the service to apply changes.
+const config = readConfig();
+// Default: this computer only. LAN mode (for a VM / another computer) listens on all interfaces.
+const HOST = config.lan ? "0.0.0.0" : "127.0.0.1";
+
+const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
+const isLoopback = (req) => LOOPBACK.has(req.socket.remoteAddress);
+
+/** Local requests never need the access code; remote ones always do (and LAN mode is the only way they arrive). */
+const needsCode = (req) => config.lan && !isLoopback(req);
+const isAuthorized = (req) => !needsCode(req) || codeMatches(req.headers["x-sketch-token"], config.token);
 
 startHttpReceiver();
 startMcpServer();
@@ -38,14 +52,22 @@ startMcpServer();
 
 function startHttpReceiver() {
   const server = http.createServer((req, res) => {
-    // Permissive CORS is fine: this only ever listens on localhost.
+    // CORS is open; access is controlled by the access code (non-local callers) / the bind address.
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Sketch-Token");
 
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
-    if (req.method === "GET" && req.url === "/health") { respondJson(res, 200, { ok: true }); return; }
-    if (req.method === "POST" && req.url === "/save") { handleSave(req, res); return; }
+    // /health is open so the extension's "Test connection" can tell "wrong code" from "unreachable".
+    if (req.method === "GET" && req.url === "/health") {
+      respondJson(res, 200, { ok: true, lan: config.lan, authRequired: needsCode(req), authorized: isAuthorized(req) });
+      return;
+    }
+    if (req.method === "POST" && req.url === "/save") {
+      if (!isAuthorized(req)) { respondJson(res, 401, { ok: false, error: "wrong access code" }); return; }
+      handleSave(req, res);
+      return;
+    }
     res.writeHead(404);
     res.end();
   });
@@ -61,14 +83,19 @@ function startHttpReceiver() {
     }
   });
 
-  server.listen(PORT, () => {
-    console.error(`UI Sketch receiver listening on http://localhost:${PORT}`);
+  server.listen(PORT, HOST, () => {
+    console.error(`UI Sketch receiver listening on http://${HOST}:${PORT}${config.lan ? " (LAN mode, access code required)" : ""}`);
   });
 }
 
 function handleSave(req, res) {
-  let body = "";
-  req.on("data", (chunk) => { body += chunk; });
+  let body = "", size = 0, tooBig = false;
+  req.on("data", (chunk) => {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) { tooBig = true; req.destroy(); return; }
+    body += chunk;
+  });
+  req.on("close", () => { if (tooBig && !res.headersSent) respondJson(res, 413, { ok: false, error: "too large" }); });
   req.on("end", () => {
     try {
       const payload = JSON.parse(body);

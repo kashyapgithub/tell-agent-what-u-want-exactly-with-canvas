@@ -7,11 +7,12 @@
  * -------------------------------------------------------------------------- */
 
 import { exportSketch } from "./exporter.js";
+import { createConnectionDialog } from "./connectionDialog.js";
+import { DEFAULT_CONNECTION, loadConnection, testConnection, describeConnection } from "./connection.js";
 import { exportScope } from "./exportScope.js";
 
 const FOLDER_STORAGE_KEY = "uiSketchExportFolder";
 const MODE_STORAGE_KEY = "uiSketchExportMode";
-const PORT_STORAGE_KEY = "uiSketchMcpPort";
 
 const $ = (id) => document.getElementById(id);
 
@@ -151,20 +152,37 @@ function wireZoomControls(engine, controller) {
 
 function wireExport(controller, engine) {
   const modeSelect = $("export-mode"), folderField = $("folder-field"), folderInput = $("export-folder");
-  const portField = $("port-field"), portInput = $("mcp-port");
+  const connBtn = $("connection-btn"), connDot = $("connection-dot"), connLabel = $("connection-label");
   const exportBtn = $("export-btn"), status = $("export-status");
 
-  chrome.storage.local.get([FOLDER_STORAGE_KEY, MODE_STORAGE_KEY, PORT_STORAGE_KEY], (result) => {
+  let connection = { ...DEFAULT_CONNECTION };
+
+  /** Shows where sketches go, with a dot that turns green/red after a quick background ping. */
+  async function refreshConnectionBadge() {
+    connLabel.textContent = describeConnection(connection);
+    connDot.dataset.state = "busy";
+    const r = await testConnection(connection);
+    connDot.dataset.state = r.state;
+    connDot.title = r.message;
+  }
+
+  const dialog = createConnectionDialog({
+    onSaved: (c) => { connection = c; refreshConnectionBadge(); },
+  });
+  connBtn.addEventListener("click", () => dialog.open(connection));
+
+  chrome.storage.local.get([FOLDER_STORAGE_KEY, MODE_STORAGE_KEY], async (result) => {
     if (result[FOLDER_STORAGE_KEY]) folderInput.value = result[FOLDER_STORAGE_KEY];
-    if (result[PORT_STORAGE_KEY]) portInput.value = result[PORT_STORAGE_KEY];
     if (result[MODE_STORAGE_KEY]) modeSelect.value = result[MODE_STORAGE_KEY];
+    connection = await loadConnection();
     applyModeVisibility();
   });
 
   function applyModeVisibility() {
     const isMcp = modeSelect.value === "mcp";
     folderField.classList.toggle("hidden", isMcp);
-    portField.classList.toggle("hidden", !isMcp);
+    connBtn.classList.toggle("hidden", !isMcp);
+    if (isMcp) refreshConnectionBadge();
   }
   modeSelect.addEventListener("change", () => {
     chrome.storage.local.set({ [MODE_STORAGE_KEY]: modeSelect.value });
@@ -174,8 +192,7 @@ function wireExport(controller, engine) {
   exportBtn.addEventListener("click", async () => {
     const mode = modeSelect.value;
     const folder = folderInput.value.trim() || "ui-sketches";
-    const port = Number(portInput.value) || 5959;
-    chrome.storage.local.set({ [FOLDER_STORAGE_KEY]: folder, [PORT_STORAGE_KEY]: port });
+    chrome.storage.local.set({ [FOLDER_STORAGE_KEY]: folder });
 
     status.textContent = "Exporting…";
     status.className = "";
@@ -183,14 +200,16 @@ function wireExport(controller, engine) {
       // Hidden layers are never exported; a selected frame/section/slice exports just itself.
       const { shapes, region, scope, slices, notes, pins } = exportScope(controller.state.shapes, controller.state.selection);
       const destination = await exportSketch({
-        mode, folder, port, shapes, rendered: engine.renderExport(shapes, { region, notes: pins }), extra: { scope, slices, notes },
+        mode, folder, connection, shapes, rendered: engine.renderExport(shapes, { region, notes: pins }), extra: { scope, slices, notes },
       });
       status.textContent = scope ? `Sent ${scope.name} to ${destination}` : `Sent to ${destination}`;
       status.className = "ok";
+      if (mode === "mcp") connDot.dataset.state = "ok";
     } catch (err) {
       console.error(err);
       status.textContent = err.message || "Export failed — see console";
       status.className = "err";
+      if (mode === "mcp") connDot.dataset.state = "unreachable";
     }
   });
 }

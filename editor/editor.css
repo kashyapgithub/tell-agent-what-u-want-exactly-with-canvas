@@ -327,3 +327,34 @@ body[data-mode="dev"] #effects-panel { display: none; }
 #toolbar input[type="range"] { width: 64px; }
 #toolbar input[type="number"] { width: 48px; }
 #toolbar .field input[type="color"] { width: 28px; height: 24px; padding: 0; }
+
+/* ---- Agent connection dialog ---- */
+#connection-btn { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #777; display: inline-block; }
+.dot[data-state="ok"] { background: #3ecf8e; }
+.dot[data-state="busy"] { background: #e5b73b; }
+.dot[data-state="unreachable"], .dot[data-state="wrong-code"], .dot[data-state="needs-code"], .dot[data-state="no-address"] { background: #f0524f; }
+.conn-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); }
+.conn-overlay.hidden { display: none; }
+.conn-box { width: 460px; max-width: calc(100vw - 32px); padding: 20px; border-radius: 12px; background: var(--panel); border: 1px solid var(--panel-border); color: var(--text); font-size: 13px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.conn-box h2 { margin: 0 0 14px; font-size: 16px; }
+.conn-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px; margin-bottom: 8px; border: 1px solid var(--panel-border); border-radius: 8px; cursor: pointer; }
+.conn-choice:has(input:checked) { border-color: var(--accent); background: rgba(58,91,217,.12); }
+.conn-choice small { display: block; margin-top: 2px; color: var(--text-dim); }
+.conn-remote-fields { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 10px; }
+.conn-remote-fields.hidden { display: none; }
+.conn-remote-fields label { display: flex; flex-direction: column; gap: 4px; color: var(--text-dim); font-size: 12px; }
+.conn-remote-fields input { padding: 6px 8px; background: #17181c; border: 1px solid var(--panel-border); border-radius: 6px; color: var(--text); font-size: 13px; }
+.conn-row { display: flex; gap: 10px; }
+.conn-row input[type="number"] { width: 90px; }
+.conn-help { margin: 0; color: var(--text-dim); line-height: 1.5; }
+.conn-help code { background: #17181c; padding: 1px 4px; border-radius: 4px; }
+.conn-status { min-height: 20px; margin: 10px 0; font-size: 12.5px; }
+.conn-status[data-state="ok"] { color: #3ecf8e; }
+.conn-status[data-state="busy"] { color: #e5b73b; }
+.conn-status[data-state="unreachable"], .conn-status[data-state="wrong-code"], .conn-status[data-state="needs-code"], .conn-status[data-state="no-address"], .conn-status[data-state="denied"] { color: #ff8582; }
+.conn-actions { display: flex; gap: 8px; align-items: center; }
+.conn-actions button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--panel-border); background: #26272e; color: var(--text); cursor: pointer; }
+.conn-actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.grow { flex: 1; }
+#conn-code { text-transform: uppercase; }

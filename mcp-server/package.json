@@ -7,7 +7,8 @@
     "start": "node server.js",
     "setup": "node setup.js",
     "uninstall-setup": "node uninstall.js",
-    "connect": "node connect.js"
+    "connect": "node connect.js",
+    "lan": "node lan.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4"

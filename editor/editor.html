@@ -113,10 +113,9 @@
         Folder
         <input type="text" id="export-folder" value="ui-sketches" spellcheck="false" />
       </label>
-      <label class="field hidden" id="port-field">
-        Port
-        <input type="number" id="mcp-port" value="5959" min="1" max="65535" />
-      </label>
+      <button id="connection-btn" class="hidden" title="Where does your coding agent run? This computer, a VM, or another computer">
+        <span id="connection-dot" class="dot"></span> Agent connection: <span id="connection-label">this computer</span>
+      </button>
       <button id="export-btn" class="primary">Send to project</button>
       <span id="export-status"></span>
     </div>

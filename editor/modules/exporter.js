@@ -16,6 +16,8 @@
  * background, no selection handles) — never a screenshot of the live canvas.
  * -------------------------------------------------------------------------- */
 
+import { receiverBase, requestHeaders, describeConnection } from "./connection.js";
+
 /**
  * Builds the JSON document. `preview` tells a reader how the PNG maps onto the
  * shape coordinates:  pixel = (world - origin) * pixelRatio.
@@ -48,28 +50,34 @@ function downloadFile(filename, url) {
 const jsonDataUrl = (doc) =>
   `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(doc, null, 2))))}`;
 
-async function pushToMcpReceiver(port, doc, pngDataUrl) {
-  const res = await fetch(`http://localhost:${port}/save`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ json: doc, pngBase64: pngDataUrl.split(",")[1] }),
-  });
-  if (!res.ok) {
-    throw new Error(`Receiver at localhost:${port} responded ${res.status}. Is the UI Sketch server running? See /mcp-server.`);
+async function pushToMcpReceiver(conn, doc, pngDataUrl) {
+  const base = receiverBase(conn);
+  if (!base) throw new Error("No address set — open “Agent connection” and enter the VM or computer address.");
+  let res;
+  try {
+    res = await fetch(`${base}/save`, {
+      method: "POST",
+      headers: requestHeaders(conn, { "Content-Type": "application/json" }),
+      body: JSON.stringify({ json: doc, pngBase64: pngDataUrl.split(",")[1] }),
+    });
+  } catch {
+    throw new Error(`Can't reach ${describeConnection(conn)} — open “Agent connection” and press Test.`);
   }
+  if (res.status === 401) throw new Error("Wrong access code — open “Agent connection” and re-enter it.");
+  if (!res.ok) throw new Error(`The server at ${describeConnection(conn)} answered ${res.status}.`);
 }
 
 /**
  * Exports via the selected mode. `rendered` is the engine's renderExport()
  * result ({ canvas, preview }). Returns a short description for the status line.
  */
-export async function exportSketch({ mode, folder, port, shapes, rendered, extra }) {
+export async function exportSketch({ mode, folder, connection, shapes, rendered, extra }) {
   const doc = buildSketchDocument(shapes, rendered.preview, extra);
   const pngDataUrl = rendered.canvas.toDataURL("image/png");
 
   if (mode === "mcp") {
-    await pushToMcpReceiver(port || 5959, doc, pngDataUrl);
-    return `localhost:${port || 5959}`;
+    await pushToMcpReceiver(connection, doc, pngDataUrl);
+    return describeConnection(connection);
   }
 
   const cleanFolder = (folder || "ui-sketches").replace(/^\/+|\/+$/g, "");
