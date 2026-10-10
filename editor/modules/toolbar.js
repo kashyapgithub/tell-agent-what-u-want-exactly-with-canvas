@@ -13,6 +13,7 @@ import { exportScope } from "./exportScope.js";
 
 const FOLDER_STORAGE_KEY = "uiSketchExportFolder";
 const MODE_STORAGE_KEY = "uiSketchExportMode";
+const AGENT_PATH_STORAGE_KEY = "uiSketchAgentPath";
 
 const $ = (id) => document.getElementById(id);
 
@@ -155,7 +156,29 @@ function wireExport(controller, engine) {
   const connBtn = $("connection-btn"), connDot = $("connection-dot"), connLabel = $("connection-label");
   const exportBtn = $("export-btn"), status = $("export-status");
 
+  const agentPathField = $("agent-path-field"), agentPathInput = $("agent-path"), copyPromptBtn = $("copy-prompt-btn");
+
   let connection = { ...DEFAULT_CONNECTION };
+
+  /** The message to paste into the agent. File mode names the files; MCP mode just asks for the tool. */
+  function buildAgentPrompt() {
+    if (modeSelect.value === "mcp") {
+      return "I drew a UI sketch. Call the get_latest_sketch tool, look at the image and JSON it returns, and build what it shows. Ask me before guessing anything unclear.";
+    }
+    const dir = (agentPathInput.value.trim() || folderInput.value.trim() || "ui-sketches").replace(/\/+$/, "");
+    return `I drew a UI sketch. Look at ${dir}/latest.png (the picture) and ${dir}/latest.json (shapes, positions, notes and comments) and build what it shows. Ask me before guessing anything unclear.`;
+  }
+  copyPromptBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(buildAgentPrompt());
+      status.textContent = "Prompt copied — paste it into your agent";
+      status.className = "ok";
+    } catch {
+      status.textContent = "Couldn't copy — allow clipboard access and try again";
+      status.className = "err";
+    }
+  });
+  agentPathInput.addEventListener("change", () => chrome.storage.local.set({ [AGENT_PATH_STORAGE_KEY]: agentPathInput.value.trim() }));
 
   /** Shows where sketches go, with a dot that turns green/red after a quick background ping. */
   async function refreshConnectionBadge() {
@@ -171,7 +194,8 @@ function wireExport(controller, engine) {
   });
   connBtn.addEventListener("click", () => dialog.open(connection));
 
-  chrome.storage.local.get([FOLDER_STORAGE_KEY, MODE_STORAGE_KEY], async (result) => {
+  chrome.storage.local.get([FOLDER_STORAGE_KEY, MODE_STORAGE_KEY, AGENT_PATH_STORAGE_KEY], async (result) => {
+    if (result[AGENT_PATH_STORAGE_KEY]) agentPathInput.value = result[AGENT_PATH_STORAGE_KEY];
     if (result[FOLDER_STORAGE_KEY]) folderInput.value = result[FOLDER_STORAGE_KEY];
     if (result[MODE_STORAGE_KEY]) modeSelect.value = result[MODE_STORAGE_KEY];
     connection = await loadConnection();
@@ -181,6 +205,7 @@ function wireExport(controller, engine) {
   function applyModeVisibility() {
     const isMcp = modeSelect.value === "mcp";
     folderField.classList.toggle("hidden", isMcp);
+    agentPathField.classList.toggle("hidden", isMcp);
     connBtn.classList.toggle("hidden", !isMcp);
     if (isMcp) refreshConnectionBadge();
   }

@@ -11,6 +11,16 @@ no GitHub round-trip.
 
 Then restart your agent and tell it "get the latest sketch". The installer is safe to re-run, never overwrites your other MCP servers, and backs up any config it edits (`*.ui-sketch.bak`). If a config can't be parsed (e.g. it has comments) it is left untouched and reported. Re-run just the agent step any time with `npm run connect` in `mcp-server/`.
 
+### Easiest for a VM: a shared folder (no server at all)
+
+If your agent runs in a VMware Fusion (or any) VM on the machine where you use Chrome:
+
+1. In Fusion enable **Shared Folders** and share a Mac folder (say `~/sketches`). In Ubuntu it appears at `/mnt/hgfs/sketches`.
+2. In Chrome, set the download folder to that Mac folder, leave **Send via → Local file**, and put `/mnt/hgfs/sketches` in the **Agent path** box.
+3. Draw, press **Send to project**, then **Copy agent prompt** and paste it into the agent. The prompt already contains the right path.
+
+No Node, installer, address or access code needed. (Prefer the agent to pull sketches itself? Use the MCP route below — "Agent in a VM".)
+
 ### Agent in a VM (or on another computer)
 
 Chrome on your Mac, agent inside a VMware Fusion Ubuntu VM? No terminal juggling:

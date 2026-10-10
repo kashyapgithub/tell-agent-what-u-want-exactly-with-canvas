@@ -113,6 +113,11 @@
         Folder
         <input type="text" id="export-folder" value="ui-sketches" spellcheck="false" />
       </label>
+      <label class="field" id="agent-path-field" title="Where your agent sees the files. In a VMware Fusion VM with a shared folder this is like /mnt/hgfs/sketches. Leave empty if the agent runs on this computer and uses the folder above.">
+        Agent path
+        <input type="text" id="agent-path" placeholder="optional, e.g. /mnt/hgfs/sketches" spellcheck="false" />
+      </label>
+      <button id="copy-prompt-btn" title="Copies a ready-to-paste message telling your agent where the sketch is">Copy agent prompt</button>
       <button id="connection-btn" class="hidden" title="Where does your coding agent run? This computer, a VM, or another computer">
         <span id="connection-dot" class="dot"></span> Agent connection: <span id="connection-label">this computer</span>
       </button>
